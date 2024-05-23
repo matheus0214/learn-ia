@@ -1,7 +1,9 @@
 import pandas as pd
 from keras import Sequential
 from keras.src.layers import Dense
+from scikeras.wrappers import KerasRegressor
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 base = pd.read_csv("autos.csv", encoding="ISO-8859-1")
@@ -14,27 +16,8 @@ base = base.drop("name", axis=1)
 base = base.drop("seller", axis=1)
 base = base.drop("offerType", axis=1)
 
-# print(base["name"].value_counts())
-# print(base["seller"].value_counts())
-# print(base["offerType"].value_counts())
-
-# i1 = base.loc[base.price <= 10]
-# i2 = base.loc[base.price > 350000]
-
 base = base[base.price > 10]
 base = base.loc[base.price < 350000]
-
-# print(base.loc[pd.isnull(base["vehicleType"])])
-# print(base.loc[pd.isnull(base["gearbox"])])
-# print(base.loc[pd.isnull(base["model"])])
-# print(base.loc[pd.isnull(base["fuelType"])])
-# print(base.loc[pd.isnull(base["notRepairedDamage"])])
-
-# print(base["vehicleType"].value_counts())  # limousine
-# print(base["gearbox"].value_counts())  # manuell
-# print(base["model"].value_counts())  # golf
-# print(base["fuelType"].value_counts())  # benzin
-# print(base["notRepairedDamage"].value_counts())  # nein
 
 valores = {
     "vehicleType": "limousine",
@@ -65,17 +48,29 @@ one_hot_encoder = ColumnTransformer(
 )
 previsores = one_hot_encoder.fit_transform(previsores).toarray()
 
-regressor = Sequential()
-# previsores.shape[1]
-regressor.add(Dense(units=158, activation="relu", input_dim=316))
-regressor.add(Dense(units=158, activation="relu"))
-regressor.add(Dense(units=1, activation="linear"))
-regressor.compile(
-    optimizer="adam", loss="mean_absolute_error", metrics=["mean_absolute_error"]
+
+def criar_rede():
+    regressor = Sequential()
+
+    regressor.add(Dense(units=158, activation="relu", input_dim=316))
+    regressor.add(Dense(units=158, activation="relu"))
+    regressor.add(Dense(units=1, activation="linear"))
+    regressor.compile(
+        optimizer="adam", loss="mean_absolute_error", metrics=["mean_absolute_error"]
+    )
+
+    return regressor
+
+
+regressor = KerasRegressor(build_fn=criar_rede, epochs=100, batch_size=300)
+resultados = cross_val_score(
+    estimator=regressor,
+    X=previsores,
+    y=preco_real,
+    cv=10,
+    scoring="neg_root_mean_squared_log_error",
 )
 
-regressor.fit(previsores, preco_real, batch_size=300, epochs=100)
-
-previsoes = regressor.predict(previsores)
-
-print(f"Media: {preco_real.mean()}")
+media = resultados.mean()
+desvio = resultados.std()
+print(f"Media: {media}\nDesvio: {desvio}")
