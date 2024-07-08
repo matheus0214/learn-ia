@@ -1,6 +1,6 @@
 import pandas as pd
 from keras import Input, Model
-from keras.src.layers import Dense
+from keras.layers import Dense
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 

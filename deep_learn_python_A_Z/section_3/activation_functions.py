@@ -40,4 +40,3 @@ print(f"Tanh: {test_tanh}")
 print(f"Relu: {test_relu}")
 print(f"Linear: {test_linear}")
 print(f"Softmax: {test_softmax}")
-0.28
